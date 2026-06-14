@@ -157,18 +157,11 @@
             </div>
           </div>
 
-          <div class="field-row">
-            <div class="field">
-              <label for="oneTimeExtraAmount">One-time extra payment</label>
-              <div class="input-prefix">
-                <span>$</span>
-                <input type="number" id="oneTimeExtraAmount" min="0" step="100" value="0" />
-              </div>
-            </div>
-            <div class="field">
-              <label for="oneTimeExtraDate">…applied in month</label>
-              <input type="month" id="oneTimeExtraDate" />
-            </div>
+          <div class="field">
+            <label>One-time extra payments</label>
+            <p class="hint">Add as many as you like — for example, a bonus in March 2028 and another in December 2030.</p>
+            <div id="oneTimeExtrasList" class="one-time-extras-list"></div>
+            <button type="button" id="addOneTimeExtraBtn" class="btn btn-secondary btn-small">+ Add one-time payment</button>
           </div>
 
           <div class="field-row">
@@ -532,6 +525,17 @@
           <legend>Refinance Comparison</legend>
           <p class="hint">Compare your current loan to a hypothetical refinance.</p>
 
+          <div class="field-row">
+            <div class="field">
+              <label for="refi-originalLoanAmount">Original loan amount</label>
+              <div class="input-prefix"><span>$</span><input type="number" id="refi-originalLoanAmount" min="0" step="500" value="360000" /></div>
+            </div>
+            <div class="field">
+              <label for="refi-originalTermYears">Original term (years)</label>
+              <input type="number" id="refi-originalTermYears" min="1" max="50" step="1" value="30" />
+            </div>
+          </div>
+
           <div class="field">
             <label for="refi-currentBalance">Current remaining balance</label>
             <div class="input-prefix"><span>$</span><input type="number" id="refi-currentBalance" min="0" step="500" value="360000" /></div>
@@ -560,6 +564,12 @@
             <label for="refi-costs">Refinance closing costs</label>
             <div class="input-prefix"><span>$</span><input type="number" id="refi-costs" min="0" step="100" value="5000" /></div>
           </div>
+          <div class="field checkbox-field">
+            <input type="checkbox" id="refiIncludeExtras" />
+            <label for="refiIncludeExtras">Include my extra payments from the Calculator tab in this comparison</label>
+          </div>
+          <p class="hint">When checked, the refinance comparison applies the monthly, one-time, and annual extra payments to both the current loan and the new loan.</p>
+
           <button type="button" id="refiUseLoanBtn" class="btn btn-secondary">Use loan amount &amp; rate from Calculator tab</button>
         </fieldset>
       </div>

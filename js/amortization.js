@@ -20,7 +20,8 @@ const Amortization = {
    * @param {number} params.annualPMI         Annual PMI dollar amount (0 if none)
    * @param {number} params.pmiRemovalLTV     LTV% at which PMI is dropped (default 80)
    * @param {number} [params.extraMonthly]    Extra principal paid every month
-   * @param {Object} [params.oneTimeExtra]    { amount, date: Date|null }
+   * @param {Array<Object>} [params.oneTimeExtras]  Array of { amount, date: Date|null }
+   * @param {Object} [params.oneTimeExtra]    Backward-compatible single { amount, date: Date|null }
    * @param {Object} [params.annualExtra]     { amount, month: 1-12|null }
    * @param {Date}   [params.extraStartDate]  Extras only apply on/after this date
    *
@@ -38,10 +39,16 @@ const Amortization = {
       annualPMI = 0,
       pmiRemovalLTV = 80,
       extraMonthly = 0,
+      oneTimeExtras = [],
       oneTimeExtra = { amount: 0, date: null },
       annualExtra = { amount: 0, month: null },
       extraStartDate = null,
     } = params;
+
+    const normalizedOneTimeExtras = [
+      ...(Array.isArray(oneTimeExtras) ? oneTimeExtras : []),
+      ...(oneTimeExtra && oneTimeExtra.amount > 0 ? [oneTimeExtra] : []),
+    ];
 
     const r = Calc.monthlyRate(annualRatePct);
     const basePayment = Calc.monthlyPI(loanAmount, annualRatePct, termYears);
@@ -71,8 +78,10 @@ const Amortization = {
       const extrasApply = !extraStartDate || date >= extraStartDate;
       if (extrasApply) {
         extra += extraMonthly;
-        if (oneTimeExtra.amount > 0 && oneTimeExtra.date && Calc.sameMonth(date, oneTimeExtra.date)) {
-          extra += oneTimeExtra.amount;
+        for (const oneTime of normalizedOneTimeExtras) {
+          if (oneTime.amount > 0 && oneTime.date && Calc.sameMonth(date, oneTime.date)) {
+            extra += oneTime.amount;
+          }
         }
         if (annualExtra.amount > 0 && annualExtra.month && (date.getMonth() + 1) === annualExtra.month) {
           extra += annualExtra.amount;
