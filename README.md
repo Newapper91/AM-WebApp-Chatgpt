@@ -83,10 +83,12 @@ to press.
 
 6. **Refinance & Points** — Compare your current loan against a new rate/
    term to see monthly savings, lifetime interest difference, and
-   break-even point on refinance costs. The Points calculator shows the
-   break-even time for buying discount points to lower your rate. A
-   "Use loan amount & rate from Calculator tab" button carries values
-   over from the main tab.
+   break-even point on refinance costs. For an existing fixed-rate loan,
+   enter your actual current monthly principal-and-interest payment so
+   that payment stays fixed when you test a lower remaining balance. The
+   Points calculator shows the break-even time for buying discount points
+   to lower your rate. A "Use loan amount & rate from Calculator tab"
+   button carries values over from the main tab.
 
 ## Notes on accuracy
 
@@ -105,9 +107,3 @@ The calculation logic (`calculations.js`, `amortization.js`,
 dependency-free JavaScript with no DOM references, so it can be reused
 as-is in a future Node/React/mobile version — only `ui.js` and `main.js`
 (the DOM-binding layer) would need to be replaced.
-
-## ChatGPT version notes
-
-- Restored support for multiple one-time extra principal payments. Use the `+ Add one-time payment` button to add separate payments in different months.
-- Refinance comparison now uses the original loan amount and original term to keep the current P&I payment fixed, while the current balance is used as the refinance amount.
-- Refinance comparison can optionally include the monthly, one-time, and annual extra payments from the Calculator tab.

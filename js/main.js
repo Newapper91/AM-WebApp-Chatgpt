@@ -52,42 +52,6 @@
     return `${y}-${m}-${d}`;
   }
 
-
-  function syncOneTimeExtrasFromDOM() {
-    const rows = Array.from(document.querySelectorAll('#oneTimeExtrasList .one-time-extra-row'));
-    oneTimeExtras = rows.map((row) => ({
-      amount: Fmt.num(row.querySelector('[data-one-time-amount]')?.value),
-      date: row.querySelector('[data-one-time-date]')?.value || '',
-    }));
-  }
-
-  function renderOneTimeExtras() {
-    const list = $('oneTimeExtrasList');
-    if (!list) return;
-    if (!oneTimeExtras.length) oneTimeExtras.push({ amount: 0, date: '' });
-
-    list.innerHTML = '';
-    oneTimeExtras.forEach((extra, idx) => {
-      const row = document.createElement('div');
-      row.className = 'field-row one-time-extra-row';
-      row.innerHTML = `
-        <div class="field">
-          <div class="input-prefix">
-            <span>$</span>
-            <input type="number" data-one-time-amount data-idx="${idx}" min="0" step="100" value="${extra.amount || 0}" aria-label="One-time extra payment amount" />
-          </div>
-        </div>
-        <div class="field">
-          <input type="month" data-one-time-date data-idx="${idx}" value="${extra.date || ''}" aria-label="One-time extra payment month" />
-        </div>
-        <div class="field one-time-extra-actions">
-          <button type="button" class="btn btn-danger btn-small" data-remove-one-time="${idx}" ${oneTimeExtras.length === 1 ? 'disabled' : ''}>Remove</button>
-        </div>
-      `;
-      list.appendChild(row);
-    });
-  }
-
   /* ================================================================
    * DOWN PAYMENT $ <-> % SYNC
    * Whichever field the user edits drives the other. Editing the
@@ -95,10 +59,6 @@
    * amount (so "10% down" stays "10% down" as the price changes).
    * ================================================================ */
   let syncing = false;
-
-  // Dynamic list of one-time extra principal payments.
-  // Each item is { amount: number|string, date: 'YYYY-MM' }.
-  let oneTimeExtras = [{ amount: 0, date: '' }];
 
   function syncAmountFromPercent() {
     if (syncing) return;
@@ -145,9 +105,8 @@
       pmiAnnualManual: Fmt.num($('pmiAnnualManual').value),
 
       extraMonthly: Fmt.num($('extraMonthly').value),
-      oneTimeExtras: oneTimeExtras
-        .map((o) => ({ amount: Fmt.num(o.amount), date: parseMonthInput(o.date) }))
-        .filter((o) => o.amount > 0 && o.date),
+      oneTimeExtraAmount: Fmt.num($('oneTimeExtraAmount').value),
+      oneTimeExtraDate: parseMonthInput($('oneTimeExtraDate').value),
       annualExtraAmount: Fmt.num($('annualExtraAmount').value),
       annualExtraMonth: Fmt.num($('annualExtraMonth').value, 1),
       extraStartDate: parseMonthInput($('extraStartDate').value),
@@ -209,7 +168,7 @@
     // Anything that should simply never be negative.
     [
       'propertyTaxAnnual', 'homeInsuranceAnnual', 'hoaMonthly', 'pmiAnnualManual',
-      'extraMonthly', 'annualExtraAmount',
+      'extraMonthly', 'oneTimeExtraAmount', 'annualExtraAmount',
       'grossMonthlyIncome', 'otherMonthlyDebts', 'closingCostValue',
     ].forEach((key) => {
       if (inputs[key] < 0) inputs[key] = 0;
@@ -259,7 +218,7 @@
 
     // ---- Schedule with extra payments (only built if any are set) ----
     const hasExtraPayments = inputs.extraMonthly > 0
-      || inputs.oneTimeExtras.length > 0
+      || inputs.oneTimeExtraAmount > 0
       || inputs.annualExtraAmount > 0;
 
     const extraSchedule = hasExtraPayments
@@ -272,7 +231,7 @@
           annualPMI,
           pmiRemovalLTV: inputs.pmiRemovalLTV,
           extraMonthly: inputs.extraMonthly,
-          oneTimeExtras: inputs.oneTimeExtras,
+          oneTimeExtra: { amount: inputs.oneTimeExtraAmount, date: inputs.oneTimeExtraDate },
           annualExtra: { amount: inputs.annualExtraAmount, month: inputs.annualExtraMonth },
           extraStartDate: inputs.extraStartDate,
         })
@@ -426,26 +385,26 @@
    * REFINANCE & POINTS TAB
    * ================================================================ */
   function recomputeRefinance() {
-    const { inputs } = validateInputs(getLoanInputs());
-    const includeExtras = $('refiIncludeExtras')?.checked;
-    const extras = includeExtras ? {
-      startDate: new Date(),
-      extraMonthly: inputs.extraMonthly,
-      oneTimeExtras: inputs.oneTimeExtras,
-      annualExtra: { amount: inputs.annualExtraAmount, month: inputs.annualExtraMonth },
-      extraStartDate: inputs.extraStartDate,
-    } : null;
-
+    const source = lastState || {};
+    const inputs = source.inputs || validateInputs(getLoanInputs()).inputs;
+    const loanAmount = source.loanAmount || Calc.loanAmount(inputs.purchasePrice, inputs.downPaymentAmount);
     const result = Refinance.compare({
-      originalLoanAmount: Fmt.num($('refi-originalLoanAmount').value),
-      originalTermYears: Math.max(1, Fmt.num($('refi-originalTermYears').value, 30)),
       currentBalance: Fmt.num($('refi-currentBalance').value),
+      currentMonthlyPayment: Fmt.num($('refi-currentPaymentInput').value),
       currentRatePct: Fmt.num($('refi-currentRate').value),
       currentRemainingMonths: Math.max(1, Fmt.num($('refi-currentRemainingYears').value, 29) * 12),
       newRatePct: Fmt.num($('refi-newRate').value),
       newTermYears: Math.max(1, Fmt.num($('refi-newTermYears').value, 30)),
       refinanceCosts: Fmt.num($('refi-costs').value),
-      extras,
+      originalLoanAmount: loanAmount,
+      originalTermYears: inputs.termYears,
+      originalStartDate: inputs.loanStartDate,
+      purchasePrice: inputs.purchasePrice,
+      includeExtraPayments: $('refi-includeExtras').checked,
+      extraMonthly: inputs.extraMonthly,
+      oneTimeExtra: { amount: inputs.oneTimeExtraAmount, date: inputs.oneTimeExtraDate },
+      annualExtra: { amount: inputs.annualExtraAmount, month: inputs.annualExtraMonth },
+      extraStartDate: inputs.extraStartDate,
     });
     UI.renderRefinance(result);
   }
@@ -471,7 +430,6 @@
     }
 
     UI.initTabs();
-    renderOneTimeExtras();
 
     // ---- Down payment $ <-> % sync ----
     $('downPaymentAmount').addEventListener('input', syncPercentFromAmount);
@@ -505,30 +463,6 @@
     // ---- Loan term: show/hide custom term field ----
     $('loanTermYears').addEventListener('change', () => {
       $('customTermWrap').hidden = $('loanTermYears').value !== 'custom';
-    });
-
-    // ---- Multiple one-time extra payments ----
-    $('addOneTimeExtraBtn').addEventListener('click', () => {
-      syncOneTimeExtrasFromDOM();
-      oneTimeExtras.push({ amount: 0, date: '' });
-      renderOneTimeExtras();
-      recompute();
-    });
-    $('oneTimeExtrasList').addEventListener('input', () => {
-      syncOneTimeExtrasFromDOM();
-      recompute();
-    });
-    $('oneTimeExtrasList').addEventListener('change', () => {
-      syncOneTimeExtrasFromDOM();
-      recompute();
-    });
-    $('oneTimeExtrasList').addEventListener('click', (e) => {
-      const idx = e.target.dataset.removeOneTime;
-      if (idx === undefined) return;
-      syncOneTimeExtrasFromDOM();
-      oneTimeExtras.splice(Number(idx), 1);
-      renderOneTimeExtras();
-      recompute();
     });
 
     // ---- Any change on the Calculator form recomputes everything ----
@@ -602,9 +536,8 @@
     $('refiUseLoanBtn').addEventListener('click', () => {
       const { inputs } = validateInputs(getLoanInputs());
       const loanAmount = Calc.loanAmount(inputs.purchasePrice, inputs.downPaymentAmount);
-      $('refi-originalLoanAmount').value = round2(loanAmount);
-      $('refi-originalTermYears').value = inputs.termYears;
       $('refi-currentBalance').value = round2(loanAmount);
+      $('refi-currentPaymentInput').value = round2(Calc.monthlyPI(loanAmount, inputs.interestRate, inputs.termYears));
       $('refi-currentRate').value = inputs.interestRate;
       $('refi-currentRemainingYears').value = inputs.termYears;
       $('pts-loanAmount').value = round2(loanAmount);

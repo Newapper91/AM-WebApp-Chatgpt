@@ -20,10 +20,10 @@ const Amortization = {
    * @param {number} params.annualPMI         Annual PMI dollar amount (0 if none)
    * @param {number} params.pmiRemovalLTV     LTV% at which PMI is dropped (default 80)
    * @param {number} [params.extraMonthly]    Extra principal paid every month
-   * @param {Array<Object>} [params.oneTimeExtras]  Array of { amount, date: Date|null }
-   * @param {Object} [params.oneTimeExtra]    Backward-compatible single { amount, date: Date|null }
+   * @param {Object} [params.oneTimeExtra]    { amount, date: Date|null }
    * @param {Object} [params.annualExtra]     { amount, month: 1-12|null }
    * @param {Date}   [params.extraStartDate]  Extras only apply on/after this date
+   * @param {number} [params.basePaymentOverride] Optional fixed P&I payment
    *
    * @returns {Array<Object>} one row per payment, each row:
    *   { month, date, payment, principal, extraPrincipal, totalPrincipal,
@@ -39,19 +39,16 @@ const Amortization = {
       annualPMI = 0,
       pmiRemovalLTV = 80,
       extraMonthly = 0,
-      oneTimeExtras = [],
       oneTimeExtra = { amount: 0, date: null },
       annualExtra = { amount: 0, month: null },
       extraStartDate = null,
+      basePaymentOverride = null,
     } = params;
 
-    const normalizedOneTimeExtras = [
-      ...(Array.isArray(oneTimeExtras) ? oneTimeExtras : []),
-      ...(oneTimeExtra && oneTimeExtra.amount > 0 ? [oneTimeExtra] : []),
-    ];
-
     const r = Calc.monthlyRate(annualRatePct);
-    const basePayment = Calc.monthlyPI(loanAmount, annualRatePct, termYears);
+    const basePayment = basePaymentOverride > 0
+      ? basePaymentOverride
+      : Calc.monthlyPI(loanAmount, annualRatePct, termYears);
     // Hard safety cap so a bad input (e.g. extra payment that increases the
     // balance somehow) can never create an infinite loop.
     const scheduledMonths = termYears * 12;
@@ -70,6 +67,8 @@ const Amortization = {
       const interestPayment = balance * r;
       let principalPayment = basePayment - interestPayment;
 
+      if (principalPayment <= 0) break;
+
       // Final payment may overshoot the remaining balance slightly.
       if (principalPayment > balance) principalPayment = balance;
 
@@ -78,10 +77,8 @@ const Amortization = {
       const extrasApply = !extraStartDate || date >= extraStartDate;
       if (extrasApply) {
         extra += extraMonthly;
-        for (const oneTime of normalizedOneTimeExtras) {
-          if (oneTime.amount > 0 && oneTime.date && Calc.sameMonth(date, oneTime.date)) {
-            extra += oneTime.amount;
-          }
+        if (oneTimeExtra.amount > 0 && oneTimeExtra.date && Calc.sameMonth(date, oneTimeExtra.date)) {
+          extra += oneTimeExtra.amount;
         }
         if (annualExtra.amount > 0 && annualExtra.month && (date.getMonth() + 1) === annualExtra.month) {
           extra += annualExtra.amount;
