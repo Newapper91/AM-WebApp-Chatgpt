@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mortgage &amp; Amortization Calculator</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <h1>Mortgage &amp; Amortization Calculator</h1>
+    <p class="tagline">Model a real home purchase: payments, PMI, taxes, extra-payment payoff, affordability, and more.</p>
+  </div>
+</header>
+
+<nav class="tabs" id="tabNav">
+  <div class="wrap tabs-inner">
+    <button class="tab-btn active" data-tab="tab-calculator">Calculator</button>
+    <button class="tab-btn" data-tab="tab-schedule">Amortization Schedule</button>
+    <button class="tab-btn" data-tab="tab-extra">Extra Payments</button>
+    <button class="tab-btn" data-tab="tab-scenarios">Scenario Comparison</button>
+    <button class="tab-btn" data-tab="tab-afford">Affordability</button>
+    <button class="tab-btn" data-tab="tab-refi">Refinance &amp; Points</button>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ============================================================ -->
+  <!-- TAB 1: CALCULATOR (inputs + summary)                          -->
+  <!-- ============================================================ -->
+  <section class="tab-panel active" id="tab-calculator">
+    <div class="layout-two-col">
+
+      <!-- INPUT FORM -->
+      <form id="loanForm" class="card form-card" novalidate>
+
+        <fieldset>
+          <legend>Purchase &amp; Loan</legend>
+
+          <div class="field">
+            <label for="purchasePrice">Purchase price</label>
+            <div class="input-prefix">
+              <span>$</span>
+              <input type="number" id="purchasePrice" min="0" step="1000" value="400000" required />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="downPaymentAmount">Down payment ($)</label>
+              <div class="input-prefix">
+                <span>$</span>
+                <input type="number" id="downPaymentAmount" min="0" step="500" value="40000" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="downPaymentPercent">Down payment (%)</label>
+              <div class="input-suffix">
+                <input type="number" id="downPaymentPercent" min="0" max="100" step="0.1" value="10" />
+                <span>%</span>
+              </div>
+            </div>
+          </div>
+          <p class="hint">These two fields stay in sync — edit either one.</p>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="interestRate">Interest rate (annual)</label>
+              <div class="input-suffix">
+                <input type="number" id="interestRate" min="0" max="25" step="0.01" value="6.5" />
+                <span>%</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="loanTermYears">Loan term</label>
+              <select id="loanTermYears">
+                <option value="30" selected>30 years</option>
+                <option value="20">20 years</option>
+                <option value="15">15 years</option>
+                <option value="custom">Custom…</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field" id="customTermWrap" hidden>
+            <label for="customTermYears">Custom term (years)</label>
+            <input type="number" id="customTermYears" min="1" max="50" step="1" value="30" />
+          </div>
+
+          <div class="field">
+            <label for="loanStartDate">Loan start date (first payment month)</label>
+            <input type="date" id="loanStartDate" />
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Taxes, Insurance &amp; Fees</legend>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="propertyTaxAnnual">Property taxes (per year)</label>
+              <div class="input-prefix">
+                <span>$</span>
+                <input type="number" id="propertyTaxAnnual" min="0" step="50" value="4800" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="homeInsuranceAnnual">Homeowners insurance (per year)</label>
+              <div class="input-prefix">
+                <span>$</span>
+                <input type="number" id="homeInsuranceAnnual" min="0" step="50" value="1500" />
+              </div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="hoaMonthly">HOA fees (per month)</label>
+              <div class="input-prefix">
+                <span>$</span>
+                <input type="number" id="hoaMonthly" min="0" step="10" value="0" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="pmiRemovalLTV">PMI removal LTV target</label>
+              <div class="input-suffix">
+                <input type="number" id="pmiRemovalLTV" min="50" max="100" step="0.5" value="80" />
+                <span>%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="field checkbox-field">
+            <input type="checkbox" id="pmiOverrideEnabled" />
+            <label for="pmiOverrideEnabled">Override estimated PMI (annual $)</label>
+          </div>
+          <div class="field" id="pmiManualWrap" hidden>
+            <div class="input-prefix">
+              <span>$</span>
+              <input type="number" id="pmiAnnualManual" min="0" step="10" value="0" />
+            </div>
+            <p class="hint">If left unchecked, PMI is estimated automatically whenever down payment is under 20% (≈0.55% of loan amount/year).</p>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Extra Payments <span class="legend-sub">(optional)</span></legend>
+
+          <div class="field">
+            <label for="extraMonthly">Extra monthly principal payment</label>
+            <div class="input-prefix">
+              <span>$</span>
+              <input type="number" id="extraMonthly" min="0" step="10" value="0" />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="oneTimeExtraAmount">One-time extra payment</label>
+              <div class="input-prefix">
+                <span>$</span>
+                <input type="number" id="oneTimeExtraAmount" min="0" step="100" value="0" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="oneTimeExtraDate">…applied in month</label>
+              <input type="month" id="oneTimeExtraDate" />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="annualExtraAmount">Recurring annual extra payment</label>
+              <div class="input-prefix">
+                <span>$</span>
+                <input type="number" id="annualExtraAmount" min="0" step="100" value="0" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="annualExtraMonth">…applied every</label>
+              <select id="annualExtraMonth">
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12" selected>December</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="extraStartDate">Start extra payments in (optional)</label>
+            <input type="month" id="extraStartDate" />
+            <p class="hint">Leave blank to start extra payments from month 1.</p>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Closing Costs &amp; Cash to Close</legend>
+
+          <div class="field radio-field">
+            <label><input type="radio" name="closingCostMethod" value="percent" checked /> % of purchase price</label>
+            <label><input type="radio" name="closingCostMethod" value="dollar" /> Flat dollar amount</label>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="closingCostValue">Closing cost estimate</label>
+              <div id="closingCostInputWrap" class="input-suffix">
+                <input type="number" id="closingCostValue" min="0" step="0.1" value="3" />
+                <span id="closingCostUnit">%</span>
+              </div>
+            </div>
+            <div class="field">
+              <label for="prepaidMonths">Prepaid escrow (months of tax + insurance)</label>
+              <input type="number" id="prepaidMonths" min="0" max="12" step="1" value="2" />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Income &amp; Debts <span class="legend-sub">(for DTI)</span></legend>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="grossMonthlyIncome">Gross monthly income</label>
+              <div class="input-prefix">
+                <span>$</span>
+                <input type="number" id="grossMonthlyIncome" min="0" step="100" value="9000" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="otherMonthlyDebts">Other monthly debt payments</label>
+              <div class="input-prefix">
+                <span>$</span>
+                <input type="number" id="otherMonthlyDebts" min="0" step="25" value="400" />
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <div id="validationErrors" class="validation-errors" hidden></div>
+      </form>
+
+      <!-- SUMMARY OUTPUT -->
+      <div class="summary-col">
+
+        <div class="card">
+          <h2>Summary</h2>
+          <div class="summary-grid">
+            <div class="stat">
+              <span class="stat-label">Loan amount</span>
+              <span class="stat-value" id="out-loanAmount">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Down payment</span>
+              <span class="stat-value" id="out-downPayment">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Down payment %</span>
+              <span class="stat-value" id="out-downPaymentPct">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Loan-to-value (LTV)</span>
+              <span class="stat-value" id="out-ltv">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card highlight-card">
+          <h2>Estimated monthly payment</h2>
+          <div class="payment-hero">
+            <span class="payment-amount" id="out-monthlyPITI">—</span>
+            <span class="payment-label">total monthly payment (PITI + PMI + HOA)</span>
+          </div>
+          <ul class="payment-breakdown" id="paymentBreakdown">
+            <!-- filled by JS -->
+          </ul>
+        </div>
+
+        <div class="card">
+          <h2>Lifetime totals</h2>
+          <div class="summary-grid">
+            <div class="stat">
+              <span class="stat-label">Total interest paid</span>
+              <span class="stat-value" id="out-totalInterest">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Total amount paid</span>
+              <span class="stat-value" id="out-totalPaid">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Payoff date</span>
+              <span class="stat-value" id="out-payoffDate">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">PMI ends around</span>
+              <span class="stat-value" id="out-pmiRemoval">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Debt-to-income (DTI)</h2>
+          <div class="summary-grid">
+            <div class="stat">
+              <span class="stat-label">Front-end DTI</span>
+              <span class="stat-value" id="out-frontDTI">—</span>
+            </div>
+            <div class="stat">
+              <span class="stat-label">Back-end DTI</span>
+              <span class="stat-value" id="out-backDTI">—</span>
+            </div>
+          </div>
+          <p class="hint">Front-end: housing payment ÷ income. Back-end: (housing payment + other debts) ÷ income. Many conventional lenders look for front-end ≲ 28% and back-end ≲ 36–43%.</p>
+        </div>
+
+        <div class="card">
+          <h2>Estimated cash needed at closing</h2>
+          <ul class="breakdown-list" id="cashToCloseBreakdown">
+            <!-- filled by JS -->
+          </ul>
+          <div class="stat total-row">
+            <span class="stat-label">Total cash to close (est.)</span>
+            <span class="stat-value" id="out-cashToClose">—</span>
+          </div>
+        </div>
+
+        <div id="warningsCard" class="card warnings-card" hidden>
+          <h2>Things to double-check</h2>
+          <ul id="warningsList"></ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- TAB 2: AMORTIZATION SCHEDULE                                  -->
+  <!-- ============================================================ -->
+  <section class="tab-panel" id="tab-schedule">
+    <div class="card">
+      <div class="schedule-controls">
+        <h2>Amortization Schedule</h2>
+        <div class="control-group">
+          <label for="scheduleVariant">Show:</label>
+          <select id="scheduleVariant">
+            <option value="normal">Normal schedule</option>
+            <option value="extra">With extra payments</option>
+          </select>
+          <button type="button" id="toggleMonthlyBtn" class="btn btn-secondary">Show monthly detail</button>
+          <button type="button" id="exportCsvBtn" class="btn btn-secondary">Export CSV</button>
+        </div>
+      </div>
+
+      <p class="hint">Annual totals shown by default. Switch to monthly detail for a full month-by-month breakdown (exportable to CSV/Excel).</p>
+
+      <div id="balanceChartWrap" class="chart-wrap"></div>
+
+      <div class="table-scroll">
+        <table class="data-table" id="scheduleTable">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- TAB 3: EXTRA PAYMENT ANALYSIS                                 -->
+  <!-- ============================================================ -->
+  <section class="tab-panel" id="tab-extra">
+    <div class="card">
+      <h2>Extra-Payment Savings Analysis</h2>
+      <p class="hint">Compares your loan with no extra payments against your loan using the extra-payment settings entered on the Calculator tab.</p>
+
+      <div class="compare-grid">
+        <div class="compare-col">
+          <h3>Normal schedule</h3>
+          <div class="summary-grid">
+            <div class="stat"><span class="stat-label">Payoff date</span><span class="stat-value" id="cmp-base-payoff">—</span></div>
+            <div class="stat"><span class="stat-label">Loan term used</span><span class="stat-value" id="cmp-base-term">—</span></div>
+            <div class="stat"><span class="stat-label">Total interest</span><span class="stat-value" id="cmp-base-interest">—</span></div>
+            <div class="stat"><span class="stat-label">Total paid</span><span class="stat-value" id="cmp-base-total">—</span></div>
+          </div>
+        </div>
+        <div class="compare-col">
+          <h3>With extra payments</h3>
+          <div class="summary-grid">
+            <div class="stat"><span class="stat-label">Payoff date</span><span class="stat-value" id="cmp-extra-payoff">—</span></div>
+            <div class="stat"><span class="stat-label">Loan term used</span><span class="stat-value" id="cmp-extra-term">—</span></div>
+            <div class="stat"><span class="stat-label">Total interest</span><span class="stat-value" id="cmp-extra-interest">—</span></div>
+            <div class="stat"><span class="stat-label">Total paid</span><span class="stat-value" id="cmp-extra-total">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="savings-banner" id="savingsBanner">
+        <!-- filled by JS -->
+      </div>
+
+      <div id="extraChartWrap" class="chart-wrap"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- TAB 4: SCENARIO COMPARISON                                    -->
+  <!-- ============================================================ -->
+  <section class="tab-panel" id="tab-scenarios">
+    <div class="card">
+      <div class="schedule-controls">
+        <h2>Scenario Comparison</h2>
+        <div class="control-group">
+          <button type="button" id="presetDownPaymentsBtn" class="btn btn-secondary">Load 5% / 10% / 20% down presets</button>
+          <button type="button" id="addScenarioBtn" class="btn btn-secondary">+ Add scenario</button>
+        </div>
+      </div>
+      <p class="hint">
+        Shared assumptions (purchase price, taxes, insurance, HOA, PMI rules, start date) come from the Calculator tab.
+        Each scenario column lets you vary down payment %, interest rate, term, and extra monthly payment.
+      </p>
+      <div class="table-scroll">
+        <table class="data-table scenario-table" id="scenarioTable"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- TAB 5: AFFORDABILITY                                          -->
+  <!-- ============================================================ -->
+  <section class="tab-panel" id="tab-afford">
+    <div class="layout-two-col">
+      <form id="affordForm" class="card form-card" novalidate>
+        <fieldset>
+          <legend>Affordability Estimate</legend>
+          <p class="hint">Estimates the maximum home price you could afford while keeping your back-end DTI at or below your target.</p>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="aff-grossMonthlyIncome">Gross monthly income</label>
+              <div class="input-prefix"><span>$</span><input type="number" id="aff-grossMonthlyIncome" min="0" step="100" value="9000" /></div>
+            </div>
+            <div class="field">
+              <label for="aff-otherMonthlyDebts">Other monthly debt payments</label>
+              <div class="input-prefix"><span>$</span><input type="number" id="aff-otherMonthlyDebts" min="0" step="25" value="400" /></div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="aff-targetDTI">Target back-end DTI</label>
+              <div class="input-suffix"><input type="number" id="aff-targetDTI" min="1" max="60" step="0.5" value="36" /><span>%</span></div>
+            </div>
+            <div class="field">
+              <label for="aff-downPaymentPct">Down payment %</label>
+              <div class="input-suffix"><input type="number" id="aff-downPaymentPct" min="0" max="100" step="0.5" value="10" /><span>%</span></div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="aff-interestRate">Interest rate</label>
+              <div class="input-suffix"><input type="number" id="aff-interestRate" min="0" max="25" step="0.01" value="6.5" /><span>%</span></div>
+            </div>
+            <div class="field">
+              <label for="aff-termYears">Loan term (years)</label>
+              <input type="number" id="aff-termYears" min="1" max="50" step="1" value="30" />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="aff-propertyTaxRate">Property tax rate (annual, % of price)</label>
+              <div class="input-suffix"><input type="number" id="aff-propertyTaxRate" min="0" max="10" step="0.05" value="1.2" /><span>%</span></div>
+            </div>
+            <div class="field">
+              <label for="aff-annualInsurance">Insurance estimate (per year)</label>
+              <div class="input-prefix"><span>$</span><input type="number" id="aff-annualInsurance" min="0" step="50" value="1500" /></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="aff-monthlyHOA">HOA (per month)</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="aff-monthlyHOA" min="0" step="10" value="0" /></div>
+          </div>
+        </fieldset>
+      </form>
+
+      <div class="summary-col">
+        <div class="card highlight-card">
+          <h2>Estimated max purchase price</h2>
+          <div class="payment-hero">
+            <span class="payment-amount" id="aff-maxPrice">—</span>
+            <span class="payment-label">at the target back-end DTI</span>
+          </div>
+        </div>
+        <div class="card">
+          <h2>At that price</h2>
+          <div class="summary-grid">
+            <div class="stat"><span class="stat-label">Max loan amount</span><span class="stat-value" id="aff-loanAmount">—</span></div>
+            <div class="stat"><span class="stat-label">Down payment</span><span class="stat-value" id="aff-downPayment">—</span></div>
+            <div class="stat"><span class="stat-label">Principal &amp; interest</span><span class="stat-value" id="aff-monthlyPI">—</span></div>
+            <div class="stat"><span class="stat-label">Property tax / mo</span><span class="stat-value" id="aff-monthlyTax">—</span></div>
+            <div class="stat"><span class="stat-label">Insurance / mo</span><span class="stat-value" id="aff-monthlyInsurance">—</span></div>
+            <div class="stat"><span class="stat-label">PMI / mo (est.)</span><span class="stat-value" id="aff-monthlyPMI">—</span></div>
+            <div class="stat"><span class="stat-label">Total monthly housing</span><span class="stat-value" id="aff-totalHousing">—</span></div>
+            <div class="stat"><span class="stat-label">Front-end / Back-end DTI</span><span class="stat-value" id="aff-dti">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- TAB 6: REFINANCE & POINTS                                     -->
+  <!-- ============================================================ -->
+  <section class="tab-panel" id="tab-refi">
+    <div class="layout-two-col">
+
+      <div class="card form-card">
+        <fieldset>
+          <legend>Refinance Comparison</legend>
+          <p class="hint">Compare your current loan to a hypothetical refinance.</p>
+
+          <div class="field">
+            <label for="refi-currentBalance">Current remaining balance</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="refi-currentBalance" min="0" step="500" value="360000" /></div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="refi-currentRate">Current rate</label>
+              <div class="input-suffix"><input type="number" id="refi-currentRate" min="0" max="25" step="0.01" value="6.5" /><span>%</span></div>
+            </div>
+            <div class="field">
+              <label for="refi-currentRemainingYears">Years remaining on current loan</label>
+              <input type="number" id="refi-currentRemainingYears" min="0" max="50" step="0.5" value="29" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="refi-newRate">New rate</label>
+              <div class="input-suffix"><input type="number" id="refi-newRate" min="0" max="25" step="0.01" value="5.5" /><span>%</span></div>
+            </div>
+            <div class="field">
+              <label for="refi-newTermYears">New term (years)</label>
+              <input type="number" id="refi-newTermYears" min="1" max="50" step="1" value="30" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="refi-costs">Refinance closing costs</label>
+            <div class="input-prefix"><span>$</span><input type="number" id="refi-costs" min="0" step="100" value="5000" /></div>
+          </div>
+          <button type="button" id="refiUseLoanBtn" class="btn btn-secondary">Use loan amount &amp; rate from Calculator tab</button>
+        </fieldset>
+      </div>
+
+      <div class="summary-col">
+        <div class="card">
+          <h2>Refinance result</h2>
+          <div class="summary-grid">
+            <div class="stat"><span class="stat-label">Current payment (P&amp;I)</span><span class="stat-value" id="refi-currentPayment">—</span></div>
+            <div class="stat"><span class="stat-label">New payment (P&amp;I)</span><span class="stat-value" id="refi-newPayment">—</span></div>
+            <div class="stat"><span class="stat-label">Monthly savings</span><span class="stat-value" id="refi-monthlySavings">—</span></div>
+            <div class="stat"><span class="stat-label">Break-even</span><span class="stat-value" id="refi-breakEven">—</span></div>
+            <div class="stat"><span class="stat-label">Interest if you keep current loan</span><span class="stat-value" id="refi-currentInterest">—</span></div>
+            <div class="stat"><span class="stat-label">Interest with new loan</span><span class="stat-value" id="refi-newInterest">—</span></div>
+            <div class="stat total-row"><span class="stat-label">Lifetime interest difference</span><span class="stat-value" id="refi-lifetimeDiff">—</span></div>
+          </div>
+        </div>
+
+        <div class="card form-card">
+          <fieldset>
+            <legend>Buying Discount Points — Break-Even</legend>
+            <p class="hint">1 point = 1% of the loan amount, paid up front for a lower rate.</p>
+
+            <div class="field">
+              <label for="pts-loanAmount">Loan amount</label>
+              <div class="input-prefix"><span>$</span><input type="number" id="pts-loanAmount" min="0" step="500" value="360000" /></div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="pts-termYears">Term (years)</label>
+                <input type="number" id="pts-termYears" min="1" max="50" step="1" value="30" />
+              </div>
+              <div class="field">
+                <label for="pts-points">Points purchased</label>
+                <input type="number" id="pts-points" min="0" max="10" step="0.125" value="1" />
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="pts-originalRate">Rate without points</label>
+                <div class="input-suffix"><input type="number" id="pts-originalRate" min="0" max="25" step="0.01" value="6.5" /><span>%</span></div>
+              </div>
+              <div class="field">
+                <label for="pts-discountedRate">Rate with points</label>
+                <div class="input-suffix"><input type="number" id="pts-discountedRate" min="0" max="25" step="0.01" value="6.25" /><span>%</span></div>
+              </div>
+            </div>
+          </fieldset>
+          <div class="summary-grid">
+            <div class="stat"><span class="stat-label">Cost of points</span><span class="stat-value" id="pts-cost">—</span></div>
+            <div class="stat"><span class="stat-label">Monthly savings</span><span class="stat-value" id="pts-monthlySavings">—</span></div>
+            <div class="stat total-row"><span class="stat-label">Break-even</span><span class="stat-value" id="pts-breakEven">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>All figures are estimates for planning purposes only — actual loan terms, taxes, insurance, and PMI depend on your lender, locality, and insurer. This tool runs entirely in your browser; no data is sent anywhere.</p>
+  </div>
+</footer>
+
+<!-- Core math (no DOM dependencies) -->
+<script src="js/calculations.js"></script>
+<script src="js/amortization.js"></script>
+<script src="js/affordability.js"></script>
+<script src="js/refinance.js"></script>
+<script src="js/scenarios.js"></script>
+<script src="js/formatters.js"></script>
+<script src="js/export.js"></script>
+<!-- UI wiring -->
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

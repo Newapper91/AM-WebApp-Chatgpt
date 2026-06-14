@@ -1,0 +1,31 @@
+{
+  "name": "Mortgage & Amortization Calculator",
+  "short_name": "Mortgage Calc",
+  "description": "Model a home purchase: payments, PMI, taxes, extra-payment payoff, affordability, refinancing, and more — all calculated locally on your device.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F6F3EC",
+  "theme_color": "#1F4B4A",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
